@@ -3,50 +3,75 @@ package mysqlORM
 import (
 	"log"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
 type Select struct {
 	opBasic
-	selectFields    []string
+	selectFields      []string
 	selectWhereFields whereCondition
-	whereModel interface{}
+	whereModel        interface{}
+	limitStart        int64
+	limitOffset       int64
+	querySql          string
+	countSql          string
 }
 
-
-func (s *Select)SetSelectFields(f []string) *Select {
+func (s *Select) SetSelectFields(f []string) *Select {
 	s.setStmtNil()
 	s.selectFields = f
 	return s
 }
 
-func (s *Select)SetSelectWhereFields(calculateType string, fields []string) *Select {
+func (s *Select) SetSelectWhereFields(calculateType string, fields []string) *Select {
 	s.setStmtNil()
 	s.selectWhereFields[calculateType] = fields
 	return s
 }
 
-func (s *Select)Where(model interface{}) *Select {
+func (s *Select) Where(model interface{}) *Select {
 	s.whereModel = model
 	return s
 }
 
-func (s *Select)prepareStmt(){
+func (s *Select) Limit(start int64, offset int64) *Select {
+	s.limitStart = start
+	s.limitOffset = offset
+	return s
+}
+
+func (s *Select) prepareStmt() {
 	if s.stmt == nil {
 		selectFStr := "*"
 		if len(s.selectFields) != 0 {
 			selectFStr = strings.Join(s.selectFields, ",")
 		}
-		theSql := "select " + selectFStr + " from " + s.table + " where " + makeConditionClause(s.selectWhereFields)
-		stmt, err := s.db.Prepare(theSql)
+		s.querySql = "select " + selectFStr + " from " + s.table + makeConditionClause(s.selectWhereFields) + " limit " + strconv.FormatInt(s.limitStart, 10) + ", " + strconv.FormatInt(s.limitOffset, 10)
+		s.countSql = "select count(*) from " + s.table + makeConditionClause(s.selectWhereFields)
+		stmt, err := s.db.Prepare(s.querySql)
 		if err != nil {
-			log.Print("Update prepare failed:"+err.Error())
+			log.Print("Update prepare failed:" + err.Error())
 		}
 		s.stmt = stmt
 	}
 }
 
-func (s *Select)Commit() ([]interface{}, error) {
+func (s *Select) CountIgnoreLimit() (res int64) {
+	rows, err := s.db.Query(s.countSql)
+	if err != nil {
+		log.Println(err)
+	}
+	for rows.Next() {
+		err := rows.Scan(&res)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	return res
+}
+
+func (s *Select) Commit() ([]interface{}, error) {
 	s.prepareStmt()
 	execParams := dynamicModelFieldConditionValues(s.whereModel, s.selectWhereFields)
 

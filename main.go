@@ -10,9 +10,8 @@ import (
 	"net/http"
 )
 
-
-func main()  {
-	log.SetFlags(log.Ldate|log.Lshortfile)
+func main() {
+	log.SetFlags(log.Ldate | log.Lshortfile)
 
 	// create mysql con
 	db, err := sql.Open("mysql",
@@ -24,20 +23,20 @@ func main()  {
 	defer db.Close()
 
 	// container
-	c := container.MyContainer{MysqlDB:db}
+	c := container.MyContainer{MysqlDB: db}
 
 	router := httprouter.New()
 	articleByIdGetHandle := ctlr.New(c).SetHandlerFunc(ctlr.ArticleByIdGet).Handler()
 	articleByIdDeleteHandle := ctlr.New(c).SetHandlerFunc(ctlr.ArticleByIdDelete).Handler()
 	articlePostHandle := ctlr.New(c).SetHandlerFunc(ctlr.ArticlePost).Handler()
 	articlePutHandle := ctlr.New(c).SetHandlerFunc(ctlr.ArticlePut).Handler()
-	//articleListGetHandle :=
-
+	articleListGetHandle := ctlr.New(c).SetHandlerFunc(ctlr.ArticleListGet).Handler()
 
 	router.GET("/article/:id", articleByIdGetHandle)
 	router.DELETE("/article/:id", articleByIdDeleteHandle)
 	router.POST("/article", articlePostHandle)
 	router.PUT("/article", articlePutHandle)
+	router.GET("/article", articleListGetHandle)
 
 	http.ListenAndServe(":8080", router)
 }

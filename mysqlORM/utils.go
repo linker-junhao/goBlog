@@ -11,20 +11,27 @@ func mysqlDateTimeNow() string {
 	return time.Now().Format("2006-01-02 15:04:05")
 }
 
-
 func mysqlQueryErrorLog(err error) {
 	log.Printf("mysql query error: %s", err.Error())
 }
 
 func makeConditionClause(c whereCondition) string {
 	conditionClause := " "
+
+	if len(c) == 0 {
+		return conditionClause
+	}
+
+	conditionClause += "where "
+
 	for key, val := range c {
-		subCondition := strings.Join(val, " = ? " + key + " ")
-		if len(val) == 1{
+		subCondition := strings.Join(val, " = ? "+key+" ")
+		if len(val) == 1 {
 			subCondition = val[0] + " = ? "
 		}
 		conditionClause += "(" + subCondition + ") and "
 	}
+
 	return conditionClause[:len(conditionClause)-4]
 }
 

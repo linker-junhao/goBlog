@@ -8,8 +8,8 @@ import (
 
 type ArticleModel struct {
 	Container container.MyContainer
-	orm *mysqlORM.MysqlORM
-	isInit  bool
+	orm       *mysqlORM.MysqlORM
+	isInit    bool
 }
 
 type Article struct {
@@ -20,7 +20,7 @@ type Article struct {
 	UpdatedAt string
 }
 
-func (a *ArticleModel)initRun() {
+func (a *ArticleModel) initRun() {
 	if !a.isInit {
 		cfg := mysqlORM.NewORMConfig("article", a.Container.MysqlDB)
 		orm := mysqlORM.NewMysqlORM(cfg)
@@ -29,9 +29,9 @@ func (a *ArticleModel)initRun() {
 	}
 }
 
-func (a *ArticleModel)GetById(id int64) (article Article, err error) {
+func (a *ArticleModel) GetById(id int64) (article Article, err error) {
 	a.initRun()
-	whereArticle := Article{Id:id,}
+	whereArticle := Article{Id: id}
 	ret, err := a.orm.Select().SetSelectWhereFields("and", []string{"id"}).
 		Where(whereArticle).Commit()
 	if err != nil {
@@ -46,7 +46,7 @@ func (a *ArticleModel)GetById(id int64) (article Article, err error) {
 	return re, nil
 }
 
-func (a *ArticleModel)DeleteById(id int64) (article Article, err error) {
+func (a *ArticleModel) DeleteById(id int64) (article Article, err error) {
 	a.initRun()
 	where := Article{Id: id}
 	ret, err := a.orm.Delete().SetDeleteWhereFields("and", []string{"id"}).Where(where).Commit()
@@ -56,22 +56,34 @@ func (a *ArticleModel)DeleteById(id int64) (article Article, err error) {
 	return ret.(Article), nil
 }
 
-func (a *ArticleModel)NewOne(article Article) (ar Article, err error) {
+func (a *ArticleModel) NewOne(article Article) (ar Article, err error) {
 	a.initRun()
 	ret, err := a.orm.Insert().SetInsertFields([]string{"title", "content"}).Commit(article)
 	if err != nil {
 		return article, err
 	}
-	return ret.(Article),nil
+	return ret.(Article), nil
 }
 
-func (a *ArticleModel)ModifyOne(article Article) (ar Article, err error) {
+func (a *ArticleModel) ModifyOne(article Article) (ar Article, err error) {
 	a.initRun()
 	ret, err := a.orm.Update().SetUpdateFields([]string{"title", "content"}).
 		SetUpdateWhereFields("and", []string{"id"}).Where(article).Commit(article)
 	if err != nil {
 		return article, err
 	}
-	return ret.(Article),nil
+	return ret.(Article), nil
 }
 
+func (a *ArticleModel) List(start int64, offset int64) (ar []Article, err error) {
+	a.initRun()
+	ret, err := a.orm.Select().SetSelectFields([]string{"id", "title", "created_at", "updated_at"}).Limit(start, offset).Where(Article{}).Commit()
+	if err != nil {
+		return nil, err
+	}
+	for i, _ := range ret {
+		ar = append(ar, ret[i].(Article))
+	}
+
+	return ar, nil
+}

@@ -5,32 +5,32 @@ import "log"
 type Delete struct {
 	opBasic
 	deleteWhereFields whereCondition
-	whereModel interface{}
+	whereModel        interface{}
 }
 
-func (d *Delete)SetDeleteWhereFields(calculateType string, fields []string) *Delete {
+func (d *Delete) SetDeleteWhereFields(calculateType string, fields []string) *Delete {
 	d.setStmtNil()
 	d.deleteWhereFields[calculateType] = fields
 	return d
 }
 
-func (d *Delete)Where(model interface{}) *Delete {
+func (d *Delete) Where(model interface{}) *Delete {
 	d.whereModel = model
 	return d
 }
 
-func (d *Delete)prepareStmt(){
+func (d *Delete) prepareStmt() {
 	if d.stmt == nil {
-		theSql := "delete from " + d.table + " where " + makeConditionClause(d.deleteWhereFields)
+		theSql := "delete from " + d.table + makeConditionClause(d.deleteWhereFields)
 		stmt, err := d.db.Prepare(theSql)
 		if err != nil {
-			log.Print("delete prepare failed:"+err.Error())
+			log.Print("delete prepare failed:" + err.Error())
 		}
 		d.stmt = stmt
 	}
 }
 
-func (d *Delete)Commit() (interface{}, error) {
+func (d *Delete) Commit() (interface{}, error) {
 	d.prepareStmt()
 	execParams := dynamicModelFieldConditionValues(d.whereModel, d.deleteWhereFields)
 	_, err := d.stmt.Exec(execParams...)
